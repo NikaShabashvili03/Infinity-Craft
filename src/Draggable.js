@@ -5,6 +5,7 @@ export function Draggable({id, data, styles, children, disabled}) {
   const {attributes, listeners, setNodeRef, transform} = useDraggable({
     id: id,
     data: data,
+    disabled: disabled
   });
 
   const style = transform ? {
@@ -13,7 +14,7 @@ export function Draggable({id, data, styles, children, disabled}) {
 
   
   return (
-    <button className='py-2' disabled={disabled} ref={setNodeRef} style={{...style, ...styles}} {...listeners} {...attributes}>
+    <button className='py-2' ref={setNodeRef} style={{...style, ...styles}} {...listeners} {...attributes}>
       {children}
     </button>
   );

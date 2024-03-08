@@ -29,34 +29,33 @@ import axios from 'axios';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
-
   const [value, setValue] = useState('');
   const [apikey, setApikey] = useState(null);
 
   const [items, setItems] = useState([
     {
-      content: 'Water 💧',
+      content: '💧 Water',
       position: {
         x: 0,
         y: 0,
       }
     },
     {
-      content: 'Fire 🔥',
+      content: '🔥 Fire',
       position: {
         x: 0,
         y: 0,
       }
     },
     {
-      content: 'Earth 🌎',
+      content: '🌎 Earth',
       position: {
         x: 0,
         y: 0,
       }
     },
     {
-      content: 'Rock 🪨',
+      content: '🪨 Rock',
       position: {
         x: 0,
         y: 0,
@@ -128,35 +127,30 @@ export default function App() {
   );
   
   async function handleSendMessage({prev, merge}){
-      setIsLoading(true);
-      const toSend = `${prev} + ${merge} write in 1 word and 1 emoji`;
-      try {
-        const result = await axios.post(
-          'https://api.openai.com/v1/chat/completions',
-          {
-            model: "gpt-3.5-turbo-0125",
-            messages: [
-                {
-                    role: "user",
-                    content: toSend
-                },
-                {
-                    role: "assistant",
-                    content: "",
-                }
-            ]
-          },
-          {
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${apikey}`,
+      const toSend = `${prev} + ${merge}`;
+      const result = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: "gpt-3.5-turbo-0125",
+          messages: [
+              {
+                  role: "user",
+                  content: toSend
+              },
+              {
+                  role: "assistant",
+                  content: "write only 1 emoji and 1 word",
               }
-          }
-      );
-      return result.data.choices[0].message.content;
-    } catch (error) {
-
-    }
+          ]
+        },
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apikey}`,
+            }
+        }
+    );
+    return result.data.choices[0].message.content;
   };
 
   async function handleDragEnd(event) {
@@ -179,66 +173,62 @@ export default function App() {
     }
 
     else if(event?.over?.id.includes('merge/') && event?.active?.id.includes('crafting/') || (event?.over?.id.includes('merge/') && event?.active.id.includes('items/'))){
+      setIsLoading(true);
       const remove = parseInt(event.active.id.at(-1));
       const merge = parseInt(event.over.id.at(-1));
       const removedItem = event.active.id.slice(6, -2);
-      const mergeItem = event.over.id.slice(6, -2);
-
-      if(removedItem.length > 0 && mergeItem.length > 0){
-        const response = handleSendMessage({
-          prev: removedItem,
-          merge: mergeItem
-        });
-
-        await response.then((res) => {
-          setIsLoading(false)
-          if(!res){
-            return;
-          }
-
-          if(merge !== remove){
-            if(event?.over?.id.includes('merge/') && event?.active.id.includes('items/')){
-              setCrafting(crafting?.map((item, id) => {
-                if(merge === id){
-                  item.content = res;
-                  return item;
-                }
-                return item
-              }))
-            }
-            else{
-              setCrafting(crafting?.map((item, id) => {
-                if(merge === id){
-                  item.content = res;
-                  return item;
-                }
-                return item
-              }).filter((_, id) => id !== parseInt(remove)));
-            }
-            if(items?.some((item) => item?.content?.toString() === res?.toString())){
-              return;
-            }else{
-              setItems((prev) => [...prev, {
-                content: res,
-                position: {
-                  x: 0,
-                  y: 0,
-                }
-              }]);
-            }
-          }else{
-            const id = parseInt(event.active.id.at(-1));
-            setCrafting(crafting?.map((item, i) => {
-              if(id !== i){
-                return item
+      const mergedItem = event.over.id.slice(6, -2);
+      
+      handleSendMessage({
+        prev: removedItem,
+        merge: mergedItem
+      }).then((res) => {
+        setIsLoading(false);
+        if(merge !== remove){
+          if(event?.over?.id.includes('merge/') && event?.active.id.includes('items/')){
+            setCrafting(crafting?.map((item, id) => {
+              if(merge === id){
+                item.content = res;
+                return item;
               }
-              item.position.x += event.delta.x;
-              item.position.y += event.delta.y;
-              return item;
-            }));
+              return item
+            }))
           }
-        });
-      }
+          else{
+            setCrafting(crafting?.map((item, id) => {
+              if(merge === id){
+                item.content = res;
+                return item;
+              }
+              return item
+            }).filter((_, id) => id !== parseInt(remove)));
+          }
+          if(items?.some((item) => item?.content?.toString() === res?.toString())){
+            return;
+          }else{
+            setItems((prev) => [...prev, {
+              content: res,
+              position: {
+                x: 0,
+                y: 0,
+              }
+            }]);
+          }
+        }else{
+          const id = parseInt(event.active.id.at(-1));
+          setCrafting(crafting?.map((item, i) => {
+            if(id !== i){
+              return item
+            }
+            item.position.x += event.delta.x;
+            item.position.y += event.delta.y;
+            return item;
+          }));
+        }
+      }).catch((err) => {
+        setIsLoading(false);
+        console.log('Error');
+      })
     }
     else if(event?.active?.id.includes('crafting/') && event?.over?.id === 'add'){
       const id = parseInt(event.active.id.at(-1));
